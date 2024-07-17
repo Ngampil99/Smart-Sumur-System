@@ -1,0 +1,106 @@
+import firebase_admin
+from firebase_admin import db, credentials
+import time
+from datetime import datetime, timezone
+import tkinter as tk
+
+root = tk.Tk()
+pesanfirebase = None
+# Authenticate to Firebase
+def timestamp():
+    dt = f"{datetime.now(timezone.utc).timestamp()}"
+    timestamp = dt.split(".")
+    timestamp = int(timestamp[0])
+    return timestamp
+
+def timestamp_millisecond():
+    timestamp_millisecond = timestamp() * 1000
+    return timestamp_millisecond
+
+def waktu_sekarang():
+    epoch = timestamp()
+    human_readable_time = time.strftime("%a, %d %b %Y %H:%M:%S", time.localtime(epoch))
+    return human_readable_time
+
+def Pesan_terima():
+    global pesanfirebase
+    pesan = pesanfirebase
+    return pesan
+
+def Pesan_kirim():
+    pesan = "aku lapar nih boi"
+    text = pesan
+    return text
+
+def isi_data():
+    isi_data = {"message": Pesan_kirim(), "senderId": "user2", "timestamp": timestamp_millisecond()}
+    return isi_data
+
+def get_all_messages(ref):
+    messages = ref.get()
+    all_messages = []
+
+    for key, message in messages.items():
+        all_messages.append(message)
+
+    return all_messages
+
+def get_latest_message(messages, sender_id):
+    latest_message = None
+    latest_timestamp = 0
+
+    for message in messages:
+        if message['senderId'] == sender_id and message['timestamp'] > latest_timestamp:
+            latest_timestamp = message['timestamp']
+            latest_message = message['message']
+
+    return latest_message
+
+def firebase():
+    cred = credentials.Certificate("trans-sibi-firebase-adminsdk-ekajf-85bc85107a.json")
+    firebase_admin.initialize_app(cred, {"databaseURL": "https://trans-sibi-default-rtdb.firebaseio.com/"})
+    ref = db.reference("/messages")
+    # Store data
+    ref.push().update(isi_data())
+    # Retrieve all messages
+    all_messages = get_all_messages(ref)
+    return all_messages
+
+def Tampilkan():
+    global pesanfirebase
+    print("Timestamp:", timestamp_millisecond())
+    messages = firebase()
+    # for message in messages:
+        # print(message)
+    latest_message_user1 = get_latest_message(messages, 'user1')
+    pesanfirebase = latest_message_user1
+    print("Latest message from user1:", latest_message_user1)
+    return messages
+
+def update_time(label2):
+    label2.config(text=waktu_sekarang())
+    root.after(1000, update_time, label2)  # Update label every 1 second
+
+def show_hello_world():
+    root.attributes('-fullscreen', True)  # Make the window fullscreen
+    root.configure(bg="white")  # Set background color to white
+
+    # Create label with "Hello World" text in larger font, centered on screen
+    label = tk.Label(root, text=Pesan_terima(), fg="black", font=("Helvetica", 18))
+    label.pack(expand=True, fill="both")
+
+    label2 = tk.Label(root, text=waktu_sekarang(), fg="black", font=("Helvetica", 14))
+    label2.pack(expand=True, fill="both")
+    update_time(label2)  # Start real-time time update
+
+    root.bind("<Control-c>", on_ctrl_c)
+
+    root.mainloop()
+
+def on_ctrl_c(event):
+    # Close the window when Ctrl+C is pressed
+    root.destroy()
+
+Tampilkan()
+show_hello_world()
+
